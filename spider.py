@@ -6,6 +6,8 @@ import pathlib
 EXTENSIONS = [".jpg", "jpeg", ".png", ".gif", ".bmp"]
 DEFAULT_DEPTH = 5
 DEFAULT_PATH = "./data/"
+IMG_PATH = []
+count = 0
 
 def parse_args():
     parser = argparse.ArgumentParser(description="SpiderBot")
@@ -35,11 +37,10 @@ def print_arg(args):
     print(f"URL: {args.URL}")
 
 def check_url(args):
-    url = args.URL
-    if not url.startswith('http://') and not url.startswith('https://'):
-        url = 'http://' + url
+    if not args.URL.startswith('http://') and not args.URL.startswith('https://'):
+        args.URL = 'http://' + args.URL
     try:
-        response = requests.get(url)
+        response = requests.get(args.URL)
         if (response.status_code != 200):
             print("error: incorrect url")
             exit(1)
@@ -59,13 +60,33 @@ def check_path(args):
         else:
             print(f"Path '{args.path}' is a valid directory.")
 
+def get_image(args):
+    response = requests.get(args.URL)
+    try:
+        if response.status_code == 200:
+            print("başarılı")
+            soup = BeautifulSoup(response.text, 'html.parser')
+            images = soup.find_all('img')
+
+            for img in images:
+                src = img.get('src')
+                if src and any(src.endswith(ext) for ext in EXTENSIONS):
+                    IMG_PATH.append(src)
+
+            print(f"Bulunan görseller: {IMG_PATH}")
+        else:
+            print(f"Hata: HTTP {response.status_code}")
+    except requests.exceptions.RequestException as e:
+        print(f"hata {e}")
+
 def main():
     args = parse_args()
     print_arg(args)
     check_path(args)
     check_url(args)
-
     print("Scraping işlemleri başlatılıyor...")
+    get_image(args)
+    print(IMG_PATH)
 
 if __name__ == "__main__":
     main()
