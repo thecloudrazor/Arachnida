@@ -34,32 +34,33 @@ def get_file_metadata(file_path):
 
 def display_metadata(file_path):
     if not os.path.isfile(file_path):
-        print(f"Error: {file_path} is not a valid file.")
-        return
+        return [f"Error: {file_path} is not a valid file."]
 
     allowed_extensions = {".jpg", ".jpeg", ".png", ".tiff"}
     if not any(file_path.lower().endswith(ext) for ext in allowed_extensions):
-        print(f"Invalid file format: {file_path}")
-        return
+        return [f"Invalid file format: {file_path}"]
 
-    print(f"\n--- Metadata for {file_path} ---")
-    print("-" * 50)
+    result = []
+    result.append(f"\n--- Metadata for {file_path} ---")
+    result.append("-" * 50)
 
     file_metadata = get_file_metadata(file_path)
-    print("File Information:")
+    result.append("File Information:")
     for key, value in file_metadata.items():
-        print(f"{key: <20}: {value}")
-    print("-" * 50)
+        result.append(f"{key: <20}: {value}")
+    result.append("-" * 50)
 
     exif_data = get_exif_data(file_path)
     if isinstance(exif_data, dict):
-        print("-" * 50)
-        print("EXIF Information:")
+        result.append("-" * 50)
+        result.append("EXIF Information:")
         for key, value in exif_data.items():
-            print(f"{key: <20}: {value}")
+            result.append(f"{key: <20}: {value}")
     else:
-        print(f"\nEXIF Information: {exif_data}")
-    print("-" * 50)
+        result.append(f"\nEXIF Information: {exif_data}")
+    result.append("-" * 50)
+
+    return result
 
 def main():
     if len(sys.argv) < 2:
