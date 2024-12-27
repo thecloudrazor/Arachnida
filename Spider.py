@@ -3,13 +3,21 @@ import requests
 from bs4 import BeautifulSoup
 import pathlib
 import os
+from urllib.parse import urlparse, urljoin
 
 EXTENSIONS = [".jpg", "jpeg", ".png", ".gif", ".bmp"]
 DEFAULT_DEPTH = 5
 DEFAULT_PATH = "./data/"
 IMG_PATH = []
-header = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:89.0) Gecko/20100101 Firefox/89.0'}
+visited_urls = []  # Ziyaret edilen URL'leri burada tutuyoruz
 count = 0
+
+RED = "\033[31m"
+YELLOW = "\033[33m"
+GREEN = "\033[32m"
+RESET = "\033[0m"
+
+header = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:89.0) Gecko/20100101 Firefox/89.0'}
 
 def parse_args():
     parser = argparse.ArgumentParser(description="SpiderBot")
@@ -19,24 +27,26 @@ def parse_args():
     parser.add_argument('URL', help='URL to download images from')
     
     args = parser.parse_args()
-    if args.depth is None:
-        if args.recursive:
-            args.depth = DEFAULT_DEPTH
-        else:
-            args.depth = 1
-    elif args.depth and (args.recursive is False):
+
+    if args.depth is None and not args.recursive:
+        args.depth = DEFAULT_DEPTH
+    elif args.depth and not args.recursive:
         parser.error("argument -l/--level: expected -r/--recursive argument.")
+    elif args.recursive and args.depth is None:
+        args.depth = DEFAULT_DEPTH
+
     if args.path is None:
         args.path = pathlib.Path(DEFAULT_PATH)
+    
     args.current_depth = 0
     return args
 
 def print_arg(args):
-    print("Arguments:")
-    print(f"	Recursive: {args.recursive}")
-    print(f"	Depth: {args.depth}")
-    print(f"	Path: {args.path}")
-    print(f"	URL: {args.URL}", "\n")
+    print(f"{GREEN}Arguments:{RESET}")
+    print(f"  {YELLOW}Recursive:{RESET} {args.recursive}")
+    print(f"  {YELLOW}Depth:{RESET} {args.depth}")
+    print(f"  {YELLOW}Path:{RESET} {args.path}")
+    print(f"  {YELLOW}URL:{RESET} {args.URL}", "\n")
 
 def check_url(args):
     if not args.URL.startswith('http://') and not args.URL.startswith('https://'):
@@ -44,24 +54,32 @@ def check_url(args):
     try:
         response = requests.get(args.URL, timeout=10, headers=header)
         if response.status_code != 200:
-            print("Error: Incorrect URL.")
+            print(f"{RED}Error: Incorrect URL.{RESET}")
             exit(1)
     except requests.exceptions.RequestException as e:
-        print(f"Error: {e}")
+        print(f"{RED}Error: {e}{RESET}")
         exit(1)
 
 def check_path(args):
-    if args.path:
-        path = pathlib.Path(args.path)
-        if not path.exists():
-            path.mkdir(parents=True, exist_ok=True)
-        elif not path.is_dir():
-            print(f"Error: The specified path '{args.path}' is not a directory.")
-            exit(1)
+    if not args.path.exists():
+        args.path.mkdir(parents=True, exist_ok=True)
+    elif not args.path.is_dir():
+        print(f"{RED}Error: The specified path '{args.path}' is not a directory.{RESET}")
+        exit(1)
 
-def get_image(args, current_depth=1):
-    if current_depth > args.depth:
+def is_visited(url):
+    return url in visited_urls  # URL, liste içerisinde var mı diye kontrol et
+
+def mark_as_visited(url):
+    visited_urls.append(url)  # URL'yi listeye ekle
+
+def get_image(args, current_depth=0):
+    if current_depth >= args.depth:
         return
+
+    if is_visited(args.URL):  # Eğer URL daha önce ziyaret edildiyse, işlemi atla
+        return
+    mark_as_visited(args.URL)  # URL'yi ziyaret edilenler listesine ekle
 
     try:
         response = requests.get(args.URL, timeout=10, headers=header)
@@ -71,38 +89,36 @@ def get_image(args, current_depth=1):
 
             for img in images:
                 src = img.get('src')
-                if src and any(src.endswith(ext) for ext in EXTENSIONS):
-                    if src not in IMG_PATH:
-                        IMG_PATH.append(src)
+                if src:
+                    img_url = urljoin(args.URL, src)  # Absolut URL'yi al
+                    if any(img_url.endswith(ext) for ext in EXTENSIONS) and img_url not in IMG_PATH:
+                        IMG_PATH.append(img_url)
 
             if args.recursive:
+                base_url = urlparse(args.URL).netloc
                 links = soup.find_all('a', href=True)
                 for link in links:
                     href = link['href']
-                    if href.startswith('http'):
+                    href_parsed = urlparse(href)
+                    if href_parsed.netloc == base_url and not is_visited(href):  # Dosyadaki URL'yi kontrol et
                         new_args = argparse.Namespace(URL=href, recursive=args.recursive, depth=args.depth, path=args.path)
+                        print(f"{GREEN}Following link: {href}{RESET}")
                         get_image(new_args, current_depth + 1)
+
         else:
-            print(f"error: HTTP {response.status_code}")
+            print(f"{RED}Error: HTTP {response.status_code}{RESET}")
     except requests.exceptions.RequestException as e:
-        print(f"error: {e}")
+        print(f"{RED}Error: {e}{RESET}")
 
 def save_images(args):
     global count
     for img_url in IMG_PATH:
         try:
-            if not img_url.startswith(('http://', 'https://')):
-                img_url = 'http://' + img_url.lstrip('//')
-
             file_name = img_url.split("/")[-1]
             save_path = args.path / file_name
 
-            if not any(file_name.endswith(ext) for ext in EXTENSIONS):
-                print(f"Invalid format: {img_url} - Skipping.")
-                continue
-
             if os.path.exists(save_path):
-                print(f"File already exists: {save_path} - Skipping.")
+                print(f"{YELLOW}File already exists: {save_path} - Skipping.{RESET}")
                 continue
 
             img_data = requests.get(img_url, timeout=10, headers=header).content
@@ -110,21 +126,20 @@ def save_images(args):
                 handler.write(img_data)
 
             count += 1
-            print(f"Image saved: {save_path}")
+            print(f"{GREEN}Image saved: {save_path}{RESET}")
         except Exception as e:
-            print(f"Error: {img_url} could not be saved. {e}")
+            print(f"{RED}Error: {img_url} could not be saved. {e}{RESET}")
 
 def main():
     args = parse_args()
     print_arg(args)
     check_path(args)
     check_url(args)
-    print("initiating scanning process...")
+    print(f"{GREEN}Initiating scanning process...{RESET}")
     get_image(args)
-    print("initiating download...")
+    print(f"{GREEN}Initiating download...{RESET}")
     save_images(args)
-    print ("total downloaded images: " ,count)
+    print(f"{GREEN}Total downloaded images: {count}{RESET}")
 
 if __name__ == "__main__":
     main()
-    
