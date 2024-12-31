@@ -4,12 +4,13 @@ from bs4 import BeautifulSoup
 import pathlib
 import os
 from urllib.parse import urlparse, urljoin
+from time import sleep
 
 EXTENSIONS = [".jpg", "jpeg", ".png", ".gif", ".bmp"]
 DEFAULT_DEPTH = 5
 DEFAULT_PATH = "./data/"
 IMG_PATH = []
-visited_urls = []  # Ziyaret edilen URL'leri burada tutuyoruz
+visited_urls = []
 count = 0
 
 RED = "\033[31m"
@@ -68,18 +69,19 @@ def check_path(args):
         exit(1)
 
 def is_visited(url):
-    return url in visited_urls  # URL, liste içerisinde var mı diye kontrol et
+    return url in visited_urls
+
 
 def mark_as_visited(url):
-    visited_urls.append(url)  # URL'yi listeye ekle
+    visited_urls.append(url)
 
 def get_image(args, current_depth=0):
     if current_depth >= args.depth:
         return
 
-    if is_visited(args.URL):  # Eğer URL daha önce ziyaret edildiyse, işlemi atla
+    if is_visited(args.URL):
         return
-    mark_as_visited(args.URL)  # URL'yi ziyaret edilenler listesine ekle
+    mark_as_visited(args.URL)
 
     try:
         response = requests.get(args.URL, timeout=10, headers=header)
@@ -90,7 +92,7 @@ def get_image(args, current_depth=0):
             for img in images:
                 src = img.get('src')
                 if src:
-                    img_url = urljoin(args.URL, src)  # Absolut URL'yi al
+                    img_url = urljoin(args.URL, src)
                     if any(img_url.endswith(ext) for ext in EXTENSIONS) and img_url not in IMG_PATH:
                         IMG_PATH.append(img_url)
 
@@ -100,15 +102,18 @@ def get_image(args, current_depth=0):
                 for link in links:
                     href = link['href']
                     href_parsed = urlparse(href)
-                    if href_parsed.netloc == base_url and not is_visited(href):  # Dosyadaki URL'yi kontrol et
+                    if href_parsed.netloc == base_url and not is_visited(href):
                         new_args = argparse.Namespace(URL=href, recursive=args.recursive, depth=args.depth, path=args.path)
-                        print(f"{GREEN}Following link: {href}{RESET}")
+                        print(f"{YELLOW}Following URL [Depth: {current_depth + 1}]:{RESET}{GREEN} {href} {RESET}")
+                        sleep(0.1)
                         get_image(new_args, current_depth + 1)
 
         else:
             print(f"{RED}Error: HTTP {response.status_code}{RESET}")
     except requests.exceptions.RequestException as e:
         print(f"{RED}Error: {e}{RESET}")
+
+
 
 def save_images(args):
     global count
@@ -127,6 +132,7 @@ def save_images(args):
 
             count += 1
             print(f"{GREEN}Image saved: {save_path}{RESET}")
+            sleep(0.1)
         except Exception as e:
             print(f"{RED}Error: {img_url} could not be saved. {e}{RESET}")
 
@@ -136,8 +142,10 @@ def main():
     check_path(args)
     check_url(args)
     print(f"{GREEN}Initiating scanning process...{RESET}")
+    sleep(1)
     get_image(args)
     print(f"{GREEN}Initiating download...{RESET}")
+    sleep(1)
     save_images(args)
     print(f"{GREEN}Total downloaded images: {count}{RESET}")
 
