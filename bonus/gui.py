@@ -58,6 +58,37 @@ def display_image(file_path):
     metadata = get_file_metadata(file_path)
     metadata.update(get_exif_data(file_path))
 
+
+    gps_info = metadata.get('GPSInfo', {})
+    if gps_info:
+        latitude = gps_info.get(2)
+        longitude = gps_info.get(4)
+
+        if latitude and longitude:
+            latitude_degrees = float(latitude[0])
+            latitude_minutes = float(latitude[1])
+            latitude_seconds = float(latitude[2])
+
+            longitude_degrees = float(longitude[0])
+            longitude_minutes = float(longitude[1])
+            longitude_seconds = float(longitude[2])
+
+            latitude_decimal = latitude_degrees + (latitude_minutes / 60) + (latitude_seconds / 3600)
+            longitude_decimal = longitude_degrees + (longitude_minutes / 60) + (longitude_seconds / 3600)
+
+            if gps_info[1] == 'S':
+                latitude_decimal = -latitude_decimal
+            if gps_info[3] == 'W':
+                longitude_decimal = -longitude_decimal
+
+            metadata["GPSInfo"] = f"{latitude_decimal:.6f}°, {longitude_decimal:.6f}°"
+
+            print(f"Updated GPS Info: {metadata['GPSInfo']}")
+
+
+
+
+
     for key, value in metadata.items():
         metadata_text[key] = value
         label = Label(edit_frame, text=f"{key}:")
@@ -75,7 +106,7 @@ def display_image(file_path):
 def save_data():
     for key, box in text_box.items():
         metadata_text[key] = box.get()
-    print(f"Updated " , metadata_text)
+        print(f"Updated ", metadata_text)
 
 def edit_metadata():
     global file_path, metadata, text_box
@@ -96,20 +127,20 @@ def create_window():
 
     global metadata_frame, edit_frame
     metadata_frame = Frame(win)
+
     edit_frame = Frame(win)
-    metadata_frame.place(x=20, y=20, width=300, height=200)
-    edit_frame.place(x=20, y=20, width=300, height=500)
-    edit_frame.place_forget()
+    metadata_frame.place(x=20, y=20, width=400, height=200)
+
     global metadata_label
     metadata_label = Label(metadata_frame, text="Metadata info", justify="left", anchor="nw")
     metadata_label.pack(fill="both", expand=True)
 
     global img_canvas
     img_canvas = Canvas(win, width=300, height=300, bg="lightgray")
-    img_canvas.place(x=350, y=20)
+    img_canvas.place(x=490, y=20)
 
     button_frame = Frame(win)
-    button_frame.place(x=350, y=350)
+    button_frame.place(x=580, y=350)
 
     Button(button_frame, text="Select", command=select_file, width=15).pack(pady=5)
     Button(button_frame, text="Edit metadata", command=edit_metadata, width=15).pack(pady=5)
