@@ -85,8 +85,11 @@ def display_image(file_path):
             print(f"Updated GPS Info: {metadata['GPSInfo']}")
 
     for key, value in metadata.items():
+        if key == "Error":
+            label = Label(edit_frame_content, text="EXIF Format not found", fg="red").pack(anchor="w", padx=10)
+            continue
         metadata_text[key] = value
-        label = Label(edit_frame_content, text=f"{key}:")
+        label = Label(edit_frame_content, text=f"{key}:", fg="green")
         label.pack(anchor="w", padx=10)
 
         box = Entry(edit_frame_content)
@@ -144,11 +147,9 @@ def create_window():
 
     edit_frame = Frame(win)
     
-    # Create a Canvas inside the edit_frame for scrolling
     edit_frame_canvas = Canvas(edit_frame, width=430, height=460)
     edit_frame_canvas.pack(side="left", fill="both", expand=True)
     
-    # Create a Frame inside the Canvas to hold Entry widgets
     edit_frame_content = Frame(edit_frame_canvas)
     edit_frame_canvas.create_window((0, 0), window=edit_frame_content, anchor="nw")
 
