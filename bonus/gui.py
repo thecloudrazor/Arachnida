@@ -14,12 +14,8 @@ def clear():
     if text_box:
         text_box.clear()
 
-    for widget in edit_frame_content.winfo_children():
+    for widget in edit_frame.winfo_children():
         widget.destroy()
-
-    if edit_frame.winfo_ismapped():
-        metadata_frame.place(x=20, y=20, width=450, height=460)
-        edit_frame.place_forget()
 
     if img_canvas.find_all():
         img_canvas.delete("all")
@@ -27,7 +23,6 @@ def clear():
 def select_file():
     global file_path
     clear()
-
     file_path = filedialog.askopenfilename(
         filetypes=(
             ("PNG Files", "*.png"),
@@ -86,13 +81,13 @@ def display_image(file_path):
 
     for key, value in metadata.items():
         if key == "Error":
-            label = Label(edit_frame_content, text="EXIF Format not found", fg="red").pack(anchor="w", padx=10)
+            label = Label(edit_frame, text="EXIF Format not found", fg="red").pack(anchor="w", padx=10)
             continue
         metadata_text[key] = value
-        label = Label(edit_frame_content, text=f"{key}:", fg="green")
+        label = Label(edit_frame, text=f"{key}:", fg="green")
         label.pack(anchor="w", padx=10)
 
-        box = Entry(edit_frame_content)
+        box = Entry(edit_frame)
         box.insert(0, value)
         box.pack(fill="x", padx=10, pady=5)
 
@@ -101,15 +96,6 @@ def display_image(file_path):
 
         text_box[key] = box
 
-    metadata_text_display = "\n".join([f"{key}: {value}" for key, value in metadata_text.items()])
-    metadata_label.config(text=metadata_text_display)
-
-    update_canvas_scroll()
-
-def update_canvas_scroll():
-    edit_frame_canvas.config(scrollregion=edit_frame_canvas.bbox("all"))
-
-
 def save_data():
     if edit_frame.winfo_ismapped() != True:
         print("no changes have been made to the metadata")
@@ -117,23 +103,8 @@ def save_data():
     
     for key, box in text_box.items():
         metadata_text[key] = box.get()
-    print(f"Updated ", metadata_text)
+    print(f"Updated metadata: ", metadata_text)
 
-
-def edit_metadata():
-    global file_path, metadata, text_box
-
-    if not file_path:
-        print("No file selected")
-        return
-    metadata_frame.place_forget()
-    edit_frame.place(x=20, y=20, width=450, height=460)
-    
-    v = Scrollbar(edit_frame, orient="vertical", command=edit_frame_canvas.yview)
-    v.place(x=430, y=0, width=20, height=460)
-    
-    edit_frame_canvas.config(yscrollcommand=v.set)
-    update_canvas_scroll()
 
 def create_window():
     win = Tk()
@@ -142,22 +113,10 @@ def create_window():
     win.resizable(False, False)
     win.attributes("-topmost", True)
 
-    global metadata_frame, edit_frame, edit_frame_canvas, edit_frame_content
-    metadata_frame = Frame(win)
-
+    global edit_frame, edit_frame_canvas
     edit_frame = Frame(win)
-    
-    edit_frame_canvas = Canvas(edit_frame, width=430, height=460)
-    edit_frame_canvas.pack(side="left", fill="both", expand=True)
-    
-    edit_frame_content = Frame(edit_frame_canvas)
-    edit_frame_canvas.create_window((0, 0), window=edit_frame_content, anchor="nw")
-
-    metadata_frame.place(x=20, y=20, width=450, height=460)
-
-    global metadata_label
-    metadata_label = Label(metadata_frame, text="Metadata info", justify="left", anchor="nw", bg="lightgreen")
-    metadata_label.pack(fill="both", expand=True)
+    edit_frame.place(x=20, y=20, width=450, height=460)
+    edit_frame.config(bg="lightgreen")
 
     global img_canvas
     img_canvas = Canvas(win, width=300, height=300, bg="lightgray")
@@ -167,7 +126,6 @@ def create_window():
     button_frame.place(x=580, y=350)
 
     Button(button_frame, text="Select", command=select_file, width=15).pack(pady=5)
-    Button(button_frame, text="Edit metadata", command=edit_metadata, width=15).pack(pady=5)
     Button(button_frame, text="Save", command=save_data, width=15).pack(pady=5)
     Button(button_frame, text="Exit", command=win.quit, width=15).pack(pady=5)
 
