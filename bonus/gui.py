@@ -1,4 +1,4 @@
-from tkinter import Tk, Label, Button, filedialog, Canvas, Entry, Frame
+from tkinter import Tk, Label, Button, filedialog, Canvas, Entry, Frame, Scrollbar
 from PIL import Image, ImageTk
 from Scorpion import get_file_metadata, get_exif_data
 
@@ -18,7 +18,7 @@ def clear():
         widget.destroy()
 
     if edit_frame.winfo_ismapped():
-        metadata_frame.place(x=20, y=20, width=300, height=200)
+        metadata_frame.place(x=20, y=20, width=450, height=460)
         edit_frame.place_forget()
 
     if img_canvas.find_all():
@@ -85,10 +85,6 @@ def display_image(file_path):
 
             print(f"Updated GPS Info: {metadata['GPSInfo']}")
 
-
-
-
-
     for key, value in metadata.items():
         metadata_text[key] = value
         label = Label(edit_frame, text=f"{key}:")
@@ -115,7 +111,11 @@ def edit_metadata():
         print("No file selected")
         return
     metadata_frame.place_forget()
-    edit_frame.place(x=20, y=20, width=300, height=500)
+    edit_frame.place(x=20, y=20, width=450, height=460)
+    v = Scrollbar(edit_frame, orient="vertical")
+    v.place(x=430, y=0, width=20, height=460)
+
+
     Button(edit_frame, text="Save", command=save_data, width=15).pack(pady=5)
 
 def create_window():
@@ -129,10 +129,10 @@ def create_window():
     metadata_frame = Frame(win)
 
     edit_frame = Frame(win)
-    metadata_frame.place(x=20, y=20, width=400, height=200)
+    metadata_frame.place(x=20, y=20, width=450, height=460)
 
     global metadata_label
-    metadata_label = Label(metadata_frame, text="Metadata info", justify="left", anchor="nw")
+    metadata_label = Label(metadata_frame, text="Metadata info", justify="left", anchor="nw", bg="lightgreen")
     metadata_label.pack(fill="both", expand=True)
 
     global img_canvas
