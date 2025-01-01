@@ -114,13 +114,22 @@ def create_window():
     win.attributes("-topmost", True)
 
     global edit_frame, edit_frame_canvas
-    edit_frame = Frame(win)
-    edit_frame.place(x=20, y=20, width=450, height=460)
-    edit_frame.config(bg="lightgreen")
+    canvas_frame = Frame(win)
+    canvas_frame.place(x=20, y=20, width=450, height=460)
 
     global img_canvas
     img_canvas = Canvas(win, width=300, height=300, bg="lightgray")
     img_canvas.place(x=490, y=20)
+
+    canvas = Canvas(canvas_frame)
+    scrollbar = Scrollbar(canvas_frame, orient="vertical", command=canvas.yview)
+    canvas.configure(yscrollcommand=scrollbar.set)
+
+    edit_frame = Frame(canvas)
+    canvas.create_window((0, 0), window=edit_frame, anchor="nw")
+
+    scrollbar.pack(side="right", fill="y")
+    canvas.pack(side="left", fill="both", expand=True)
 
     button_frame = Frame(win)
     button_frame.place(x=580, y=350)
@@ -128,5 +137,10 @@ def create_window():
     Button(button_frame, text="Select", command=select_file, width=15).pack(pady=5)
     Button(button_frame, text="Save", command=save_data, width=15).pack(pady=5)
     Button(button_frame, text="Exit", command=win.quit, width=15).pack(pady=5)
+
+    def on_frame_resize(event):
+        canvas.configure(scrollregion=canvas.bbox("all"))
+
+    edit_frame.bind("<Configure>", on_frame_resize)
 
     win.mainloop()
