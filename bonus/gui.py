@@ -1,8 +1,10 @@
 from tkinter import Tk, Label, Button, filedialog, Canvas, Entry, Frame, Scrollbar
 from PIL import Image, ImageTk, ExifTags
+from Scorpion import get_exif_data, get_file_metadata
 import os
 
 metadata_text = {}
+fileMetaData = {}
 text_box = {}
 file_path = None
 
@@ -37,9 +39,55 @@ def select_file():
         return
     display_image(file_path)
 
-def display_image(file_path):
-    global metadata_text
 
+def showFileData():
+    Label(edit_frame, text="*" * 40).pack(anchor="w",padx=10)
+    Label(edit_frame, text="FILE DATA:", fg="yellow", bg="black").pack(anchor="w",padx=10)
+    Label(edit_frame, text="*" * 40).pack(anchor="w",padx=10)
+    for key, value in fileMetaData.items():
+        if key == "Error":
+            Label(edit_frame, text=f"\tExif data not found:", fg="red").pack(anchor="w", padx=10)
+            continue
+        Label(edit_frame, text=f"{key}:", fg="green").pack(anchor="w", padx=10)
+        box = Entry(edit_frame)
+        box.insert(0, value)
+        box.pack(fill="x", padx=10, pady=5)
+        text_box[key] = box
+
+
+def showExifData():
+    Label(edit_frame, text="*" * 40).pack(anchor="w",padx=10)
+    Label(edit_frame, text="EXIF DATA:", fg="yellow", bg="black").pack(anchor="w",padx=10)
+    Label(edit_frame, text="*" * 40).pack(anchor="w",padx=10)
+    for key, value in metadata_text.items():
+        if key == "Error":
+            Label(edit_frame, text=f"Exif data not found:", fg="red").pack(anchor="w", padx=10)
+            continue
+        Label(edit_frame, text=f"{key}:", fg="green").pack(anchor="w", padx=10)
+        box = Entry(edit_frame)
+        box.insert(0, value)
+        box.pack(fill="x", padx=10, pady=5)
+        text_box[key] = box
+
+
+def getData(file_path):
+    global metadata_text, fileMetaData
+
+    exifData = get_exif_data(file_path)
+    fileData = get_file_metadata(file_path)
+    for key, value in exifData.items():
+        tag = ExifTags.TAGS.get(key, key)
+        metadata_text[tag] = value
+
+    for key, value in fileData.items():
+        tag = ExifTags.TAGS.get(key, key)
+        fileMetaData[tag] = value
+
+    showFileData()
+    showExifData()
+
+
+def display_image(file_path):
     img = Image.open(file_path)
     img.thumbnail((300, 300))
     img_tk = ImageTk.PhotoImage(img)
@@ -50,19 +98,8 @@ def display_image(file_path):
     img_canvas.create_image(canvas_width // 2, canvas_height // 2, image=img_tk, anchor="center")
     img_canvas.image = img_tk
 
-    metadata = img.getexif()
-    for key, value in metadata.items():
-        tag = ExifTags.TAGS.get(key, key)
-        metadata_text[tag] = value
-
-    for key, value in metadata_text.items():
-        label = Label(edit_frame, text=f"{key}:", fg="green")
-        label.pack(anchor="w", padx=10)
-
-        box = Entry(edit_frame)
-        box.insert(0, value)
-        box.pack(fill="x", padx=10, pady=5)
-        text_box[key] = box
+    getData(file_path)
+    
 
 def save_metadata():
     if not file_path:
@@ -88,8 +125,8 @@ def delete_metadata():
     
     img = Image.open(file_path)
     img.info.pop("exif", None)
-    img.save("metadata_deleted.jpg")
-    print("Metadata deleted and saved as 'metadata_deleted.jpg'.")
+    img.save("metadata_deleted" + os.path.splitext(file_path)[1])
+    print("Metadata deleted and saved as metadata_deleted" + os.path.splitext(file_path)[1])
 
 def create_window():
     win = Tk()
