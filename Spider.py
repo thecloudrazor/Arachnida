@@ -105,7 +105,7 @@ def get_image(args, current_depth=0):
                     if href_parsed.netloc == base_url and not is_visited(href):
                         new_args = argparse.Namespace(URL=href, recursive=args.recursive, depth=args.depth, path=args.path)
                         print(f"{YELLOW}Following URL [Depth: {current_depth + 1}]:{RESET}{GREEN} {href} {RESET}")
-                        sleep(0.1)
+                        sleep(0.01)
                         get_image(new_args, current_depth + 1)
 
         else:
@@ -132,7 +132,7 @@ def save_images(args):
 
             count += 1
             print(f"{GREEN}Image saved: {save_path}{RESET}")
-            sleep(0.1)
+            sleep(0.01)
         except Exception as e:
             print(f"{RED}Error: {img_url} could not be saved. {e}{RESET}")
 

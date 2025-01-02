@@ -39,7 +39,6 @@ def select_file():
         return
     display_image(file_path)
 
-
 def showFileData():
     Label(edit_frame, text="*" * 40).pack(anchor="w",padx=10)
     Label(edit_frame, text="FILE DATA:", fg="yellow", bg="black").pack(anchor="w",padx=10)
@@ -54,7 +53,6 @@ def showFileData():
         box.pack(fill="x", padx=10, pady=5)
         text_box[key] = box
 
-
 def showExifData():
     Label(edit_frame, text="*" * 40).pack(anchor="w",padx=10)
     Label(edit_frame, text="EXIF DATA:", fg="yellow", bg="black").pack(anchor="w",padx=10)
@@ -68,7 +66,6 @@ def showExifData():
         box.insert(0, value)
         box.pack(fill="x", padx=10, pady=5)
         text_box[key] = box
-
 
 def getData(file_path):
     global metadata_text, fileMetaData
@@ -86,7 +83,6 @@ def getData(file_path):
     showFileData()
     showExifData()
 
-
 def display_image(file_path):
     img = Image.open(file_path)
     img.thumbnail((300, 300))
@@ -100,7 +96,6 @@ def display_image(file_path):
 
     getData(file_path)
     
-
 def save_metadata():
     if not file_path:
         print("No file selected")
