@@ -2,6 +2,7 @@ from tkinter import Tk, Label, Button, filedialog, Canvas, Entry, Frame, Scrollb
 from PIL import Image, ImageTk, ExifTags
 from Scorpion import get_exif_data, get_file_metadata
 import os
+import piexif
 
 metadata_text = {}
 fileMetaData = {}
@@ -101,17 +102,42 @@ def save_metadata():
         print("No file selected")
         return
     
-    img = Image.open(file_path)
-    exif_data = img.getexif()
-
+    # Mevcut EXIF verilerini oku
+    exif_dict = piexif.load(file_path)
+    
+    # Entry box'lardan gelen değerleri güncelle
     for key, box in text_box.items():
         value = box.get()
-        for exif_key, exif_value in exif_data.items():
-            if ExifTags.TAGS.get(exif_key) == key:
-                exif_data[exif_key] = value
+        # Tüm EXIF gruplarını kontrol et
+        for ifd in ("0th", "Exif", "GPS", "1st"):
+            if ifd in exif_dict:
+                for exif_key, exif_value in list(exif_dict[ifd].items()):
+                    tag_name = piexif.TAGS[ifd][exif_key]["name"]
+                    if tag_name == key:
+                        try:
+                            # Orijinal veri tipine göre dönüşüm
+                            if isinstance(exif_value, int):
+                                converted_value = int(value)
+                            elif isinstance(exif_value, float):
+                                converted_value = float(value)
+                            else:
+                                converted_value = value.encode('utf-8')
+                            
+                            exif_dict[ifd][exif_key] = converted_value
+                        except ValueError:
+                            print(f"Hata: {key} için geçersiz değer girişi")
     
-    img.save("updated_image.jpg", exif=exif_data)
-    print("Metadata updated and saved as 'updated_image.jpg'.")
+    # EXIF verilerini binary formata dönüştür
+    exif_bytes = piexif.dump(exif_dict)
+    
+    # Yeni EXIF verilerini kaydet
+    piexif.insert(exif_bytes, file_path)
+    
+    print(f"Metadata updated and saved to: {file_path}")
+    
+    # Görüntüyü ve metadata'yı yenile
+    clear()
+    display_image(file_path)
 
 def delete_metadata():
     if not file_path:
