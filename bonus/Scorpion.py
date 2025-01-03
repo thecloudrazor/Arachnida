@@ -2,6 +2,8 @@ import os
 from PIL import Image
 from PIL.ExifTags import TAGS
 
+passData = [34970, "ImageDescription", 39594, "ComponentsConfiguration"]
+
 def get_exif_data(image_path):
     try:
         image = Image.open(image_path)
@@ -12,6 +14,8 @@ def get_exif_data(image_path):
         exif_info = {}
         for tag_id, value in exif_data.items():
             tag_name = TAGS.get(tag_id, tag_id)
+            if tag_name in passData:
+                continue
             exif_info[tag_name] = value
 
         return exif_info
