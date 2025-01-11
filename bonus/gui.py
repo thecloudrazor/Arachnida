@@ -2,7 +2,6 @@ from tkinter import Tk, Label, Button, filedialog, Canvas, Entry, Frame, Scrollb
 from PIL import Image, ImageTk, ExifTags
 from Scorpion import get_exif_data, get_file_metadata, passData
 import os
-import piexif
 from PIL.ExifTags import TAGS
 
 
@@ -149,7 +148,6 @@ def save_metadata():
 
     except Exception as e:
         print(f"General error occurred: {str(e)}")
-
 
 
 def delete_metadata():
