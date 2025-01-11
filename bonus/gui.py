@@ -102,7 +102,7 @@ def display_image(file_path):
 
 def save_metadata():
     if not file_path:
-        print("Dosya seçilmedi")
+        print("No file selected")
         return
 
     try:
@@ -110,7 +110,7 @@ def save_metadata():
         exif = img.getexif()
 
         if not exif:
-            print("Resimde Exif verisi bulunamadı")
+            print("No Exif data found in image")
             return
 
         current_tags = {}
@@ -122,7 +122,6 @@ def save_metadata():
                     'type': type(value),
                     'value': value
                 }
-                print(f"Mevcut tag: {tag_name} (ID: {tag_id}, Tip: {type(value)})")
 
         for meta_key, entry in text_box.items():
             if meta_key in passData:
@@ -134,23 +133,22 @@ def save_metadata():
                         value = entry.get().strip()
                         if value:
                             converted_value = tag_info['type'](value)
-                            print(f"Güncelleniyor: {tag_info['name']} (ID: {tag_id}) = {converted_value}")
                             exif[tag_id] = converted_value
                     except ValueError as ve:
-                        print(f"Değer dönüştürme hatası: {tag_info['name']} - {str(ve)}")
+                        print(f"Value conversion error: {tag_info['name']} - {str(ve)}")
                         continue
                     except Exception as e:
-                        print(f"Tag güncellenirken hata: {tag_info['name']}")
-                        print(f"Hata mesajı: {str(e)}")
+                        print(f"Error updating tag: {tag_info['name']}")
+                        print(f"Error message: {str(e)}")
                         continue
 
         # Yeni dosyayı kaydet
         new_file_path = "metadata_updated" + os.path.splitext(file_path)[1]
         img.save(new_file_path, exif=exif)
-        print(f"Metadata güncellendi ve {new_file_path} olarak kaydedildi")
+        print(f"Metadata updated and saved as {new_file_path}")
 
     except Exception as e:
-        print(f"Genel hata oluştu: {str(e)}")
+        print(f"General error occurred: {str(e)}")
 
 
 
