@@ -113,42 +113,26 @@ def save_metadata():
             print("Resimde Exif verisi bulunamadı")
             return
 
-        # Belirtilen EXIF tag'leri ve veri tipleri
-        KNOWN_TAGS = {
-            256: {'name': 'ImageWidth', 'type': int},
-            257: {'name': 'ImageLength', 'type': int},
-            296: {'name': 'ResolutionUnit', 'type': int},
-            34665: {'name': 'ExifOffset', 'type': int},
-            274: {'name': 'Orientation', 'type': int},
-            531: {'name': 'YCbCrPositioning', 'type': int},
-            282: {'name': 'XResolution', 'type': float},
-            283: {'name': 'YResolution', 'type': float},
-            36864: {'name': 'ExifVersion', 'type': str},
-            37121: {'name': 'ComponentsConfiguration', 'type': str},
-            40960: {'name': 'FlashPixVersion', 'type': str},
-            37379: {'name': 'BrightnessValue', 'type': float},
-            37380: {'name': 'ExposureBiasValue', 'type': float},
-            37381: {'name': 'MaxApertureValue', 'type': float},
-            40961: {'name': 'ColorSpace', 'type': int},
-            37383: {'name': 'MeteringMode', 'type': int},
-            37384: {'name': 'LightSource', 'type': int},
-            40962: {'name': 'ExifImageWidth', 'type': int},
-            40963: {'name': 'ExifImageHeight', 'type': int},
-            41986: {'name': 'ExposureMode', 'type': int},
-            41990: {'name': 'SceneCaptureType', 'type': int},
-            40965: {'name': 'ExifInteroperabilityOffset', 'type': int},
-            41495: {'name': 'SensingMethod', 'type': int},
-            41729: {'name': 'SceneType', 'type': str}
-        }
+        current_tags = {}
+        for tag_id, value in exif.items():
+            tag_name = TAGS.get(tag_id)
+            if tag_name:
+                current_tags[tag_id] = {
+                    'name': tag_name,
+                    'type': type(value),
+                    'value': value
+                }
+                print(f"Mevcut tag: {tag_name} (ID: {tag_id}, Tip: {type(value)})")
 
-        # Text box'lardan gelen değerleri güncelle
         for meta_key, entry in text_box.items():
-            for tag_id, tag_info in KNOWN_TAGS.items():
-                if tag_info['name'] == meta_key and meta_key not in passData:
+            if meta_key in passData:
+                continue
+                
+            for tag_id, tag_info in current_tags.items():
+                if tag_info['name'] == meta_key:
                     try:
-                        # Değeri uygun tipe dönüştür
                         value = entry.get().strip()
-                        if value:  # Boş değilse
+                        if value:
                             converted_value = tag_info['type'](value)
                             print(f"Güncelleniyor: {tag_info['name']} (ID: {tag_id}) = {converted_value}")
                             exif[tag_id] = converted_value
