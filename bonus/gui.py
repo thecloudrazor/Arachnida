@@ -1,8 +1,10 @@
 from tkinter import Tk, Label, Button, filedialog, Canvas, Entry, Frame, Scrollbar
 from PIL import Image, ImageTk, ExifTags
-from Scorpion import get_exif_data, get_file_metadata
+from Scorpion import get_exif_data, get_file_metadata, passData
 import os
 import piexif
+from PIL.ExifTags import TAGS
+
 
 metadata_text = {}
 fileMetaData = {}
@@ -97,47 +99,76 @@ def display_image(file_path):
 
     getData(file_path)
     
+
 def save_metadata():
     if not file_path:
-        print("No file selected")
+        print("Dosya seçilmedi")
         return
-    
-    # Mevcut EXIF verilerini oku
-    exif_dict = piexif.load(file_path)
-    
-    # Entry box'lardan gelen değerleri güncelle
-    for key, box in text_box.items():
-        value = box.get()
-        # Tüm EXIF gruplarını kontrol et
-        for ifd in ("0th", "Exif", "GPS", "1st"):
-            if ifd in exif_dict:
-                for exif_key, exif_value in list(exif_dict[ifd].items()):
-                    tag_name = piexif.TAGS[ifd][exif_key]["name"]
-                    if tag_name == key:
-                        try:
-                            # Orijinal veri tipine göre dönüşüm
-                            if isinstance(exif_value, int):
-                                converted_value = int(value)
-                            elif isinstance(exif_value, float):
-                                converted_value = float(value)
-                            else:
-                                converted_value = value.encode('utf-8')
-                            
-                            exif_dict[ifd][exif_key] = converted_value
-                        except ValueError:
-                            print(f"Hata: {key} için geçersiz değer girişi")
-    
-    # EXIF verilerini binary formata dönüştür
-    exif_bytes = piexif.dump(exif_dict)
-    
-    # Yeni EXIF verilerini kaydet
-    piexif.insert(exif_bytes, file_path)
-    
-    print(f"Metadata updated and saved to: {file_path}")
-    
-    # Görüntüyü ve metadata'yı yenile
-    clear()
-    display_image(file_path)
+
+    try:
+        img = Image.open(file_path)
+        exif = img.getexif()
+
+        if not exif:
+            print("Resimde Exif verisi bulunamadı")
+            return
+
+        # Belirtilen EXIF tag'leri ve veri tipleri
+        KNOWN_TAGS = {
+            256: {'name': 'ImageWidth', 'type': int},
+            257: {'name': 'ImageLength', 'type': int},
+            296: {'name': 'ResolutionUnit', 'type': int},
+            34665: {'name': 'ExifOffset', 'type': int},
+            274: {'name': 'Orientation', 'type': int},
+            531: {'name': 'YCbCrPositioning', 'type': int},
+            282: {'name': 'XResolution', 'type': float},
+            283: {'name': 'YResolution', 'type': float},
+            36864: {'name': 'ExifVersion', 'type': str},
+            37121: {'name': 'ComponentsConfiguration', 'type': str},
+            40960: {'name': 'FlashPixVersion', 'type': str},
+            37379: {'name': 'BrightnessValue', 'type': float},
+            37380: {'name': 'ExposureBiasValue', 'type': float},
+            37381: {'name': 'MaxApertureValue', 'type': float},
+            40961: {'name': 'ColorSpace', 'type': int},
+            37383: {'name': 'MeteringMode', 'type': int},
+            37384: {'name': 'LightSource', 'type': int},
+            40962: {'name': 'ExifImageWidth', 'type': int},
+            40963: {'name': 'ExifImageHeight', 'type': int},
+            41986: {'name': 'ExposureMode', 'type': int},
+            41990: {'name': 'SceneCaptureType', 'type': int},
+            40965: {'name': 'ExifInteroperabilityOffset', 'type': int},
+            41495: {'name': 'SensingMethod', 'type': int},
+            41729: {'name': 'SceneType', 'type': str}
+        }
+
+        # Text box'lardan gelen değerleri güncelle
+        for meta_key, entry in text_box.items():
+            for tag_id, tag_info in KNOWN_TAGS.items():
+                if tag_info['name'] == meta_key and meta_key not in passData:
+                    try:
+                        # Değeri uygun tipe dönüştür
+                        value = entry.get().strip()
+                        if value:  # Boş değilse
+                            converted_value = tag_info['type'](value)
+                            print(f"Güncelleniyor: {tag_info['name']} (ID: {tag_id}) = {converted_value}")
+                            exif[tag_id] = converted_value
+                    except ValueError as ve:
+                        print(f"Değer dönüştürme hatası: {tag_info['name']} - {str(ve)}")
+                        continue
+                    except Exception as e:
+                        print(f"Tag güncellenirken hata: {tag_info['name']}")
+                        print(f"Hata mesajı: {str(e)}")
+                        continue
+
+        # Yeni dosyayı kaydet
+        new_file_path = "metadata_updated" + os.path.splitext(file_path)[1]
+        img.save(new_file_path, exif=exif)
+        print(f"Metadata güncellendi ve {new_file_path} olarak kaydedildi")
+
+    except Exception as e:
+        print(f"Genel hata oluştu: {str(e)}")
+
+
 
 def delete_metadata():
     if not file_path:

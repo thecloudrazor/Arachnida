@@ -2,7 +2,7 @@ import os
 from PIL import Image
 from PIL.ExifTags import TAGS
 
-passData = [34970, "ImageDescription", 39594, "ComponentsConfiguration"]
+passData = [34970, "ImageDescription", 39594, "ComponentsConfiguration", "ExposureProgram"]
 
 def get_exif_data(image_path):
     try:
