@@ -1,3 +1,5 @@
 tk
 pillow
 piexif
+bs4
+requests
